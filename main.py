@@ -42,6 +42,7 @@ def mutation(chromosome):
     idx1 = random.randint(0, len(CITIES) - 1)
     idx2 = random.randint(0, len(CITIES) - 1)
     chromosome.route[idx1], chromosome.route[idx2] = chromosome.route[idx2], chromosome.route[idx1]
+    chromosome.calc_fittness()
     print(chromosome.route)
 
 

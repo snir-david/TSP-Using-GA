@@ -1,22 +1,38 @@
 import random
-
 from main import CITIES
-import numpy as np
-
-
-class Individual:
-    def __init__(self):
-        pass
 
 
 class Population:
     def __init__(self, size):
         self.populationSize = size
         self.population = []
-        for i in range(size):
+        self.weights = []
+        self.init_population()
+        self.find_weights()
+
+    def init_population(self):
+        for i in range(self.populationSize):
             c = Chromosome()
             c.random_init()
             self.population.append(c)
+
+    def find_weights(self):
+        sum = 0
+        for c in self.population:
+            sum += c.fittness
+        for c in self.population:
+            self.weights.append((c.fittness / sum) * 100)
+
+    def set_population(self, population_list):
+        for i in range(len(population_list)):
+            self.population[i] = population_list[i]
+
+    def get_fittest(self):
+        fittest = self.population[0]
+        for chrom in self.population:
+            if chrom.fittness > fittest.fittness:
+                fittest = chrom
+        return fittest
 
 
 class Chromosome:
@@ -37,9 +53,4 @@ class Chromosome:
         for i in range(len(self.route) - 2):
             diff = abs(self.route[i + 1] - self.route[i])
             sum += diff
-        self.fittness = sum
-
-
-class Individual:
-    def __init__(self):
-        pass
+        self.fittness = 1 / sum

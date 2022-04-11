@@ -26,6 +26,9 @@ class Chromosome:
     def random_init(self):
         self.route = random.sample(CITIES, len(CITIES))
 
+    def set_route(self, route_list):
+        self.route = route_list
+
 
 class Individual:
     def __init__(self):

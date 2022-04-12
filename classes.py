@@ -34,11 +34,21 @@ class Population:
                 fittest = chrom
         return fittest
 
+    def get_worst_index(self):
+        worst = self.population[0]
+        idx = 0
+        for i in range(len(self.population)):
+            if self.population[i].fittness < worst.fittness:
+                worst = self.population[i]
+                idx = i
+        return idx
+
 
 class Chromosome:
     def __init__(self):
         self.route = []
         self.fittness = 0
+        self.distance = 0
 
     def random_init(self):
         self.route = random.sample(CITIES, len(CITIES))
@@ -50,7 +60,13 @@ class Chromosome:
 
     def calc_fittness(self):
         sum = 0
-        for i in range(len(self.route) - 2):
+        for i in range(len(self.route) - 1):
             diff = abs(self.route[i + 1] - self.route[i])
             sum += diff
-        self.fittness = 1 / sum
+        sum += abs(self.route[0] - self.route[len(self.route)-1])
+        self.distance = sum
+        self.fittness = 1/sum
+
+    def swap(self, i, j):
+        self.route[i], self.route[j] = self.route[j], self.route[i]
+        self.calc_fittness()

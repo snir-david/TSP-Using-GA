@@ -1,36 +1,46 @@
-import random
+import sys
+from timeit import default_timer as timer
 
 from classes import *
 
-POPULATION_SIZE = 10000
+POPULATION_SIZE = 1000
+ELITE_SIZE = int(POPULATION_SIZE * 0.1)
 MUTATION_RATE = 10
 NUMBER_OF_GENERATIONS = 1000
-CITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
-def crossover(parent1, parent2): \
-        # init
-    offspring1 = [None] * len(CITIES)
-    offspring2 = [None] * len(CITIES)
+def init_cities(cities_list):
+    cities = []
+    for i in range(len(cities_list)):
+        c = City(cities_list[i][0], cities_list[i][1], i)
+        cities.append(c)
+    return cities
+
+
+def crossover(parent1, parent2):
+    # init
+    size = len(parent1.route)
+    offspring1 = [None] * size
+    offspring2 = [None] * size
     offspring1_idx = 0
     offspring2_idx = 0
     # random
-    idx1 = random.randint(0, len(CITIES) - 1)
-    idx2 = random.randint(idx1, len(CITIES))
+    idx1 = random.randint(0, size - 1)
+    idx2 = random.randint(idx1, size)
     diff = idx2 - idx1
     # taking from idx1 to idx2 the part of the appropriate parent
     for i in range(idx1, idx2):
         offspring1[i] = parent1.route[i]
         offspring2[i] = parent2.route[i]
     # rest of crossover
-    for j in range(len(CITIES)):
-        if parent2.route[j] not in offspring1 and ((offspring1_idx + diff) < len(CITIES)):
+    for j in range(size):
+        if parent2.route[j] not in offspring1 and ((offspring1_idx + diff) < size):
             if offspring1_idx < idx1:
                 offspring1[offspring1_idx] = parent2.route[j]
             else:
                 offspring1[offspring1_idx + diff] = parent2.route[j]
             offspring1_idx += 1
-        if parent1.route[j] not in offspring2 and ((offspring2_idx + diff) < len(CITIES)):
+        if parent1.route[j] not in offspring2 and ((offspring2_idx + diff) < size):
             if offspring2_idx < idx1:
                 offspring2[offspring2_idx] = parent1.route[j]
             else:
@@ -42,56 +52,89 @@ def crossover(parent1, parent2): \
     return o1, o2
 
 
-def mutation(chromosome, mutation_rate):
+def one_point_crossover(parent1, parent2):
+    # init
+    size = len(parent1.route)
+    offspring1 = []
+    offspring2 = []
+    # random
+    point = random.randint(1, size - 1)
+    offspring1.extend(parent1.route[0:point])
+    offspring1.extend(parent2.route[point:size])
+    offspring2.extend(parent2.route[0:point])
+    offspring2.extend(parent1.route[point:size])
+    # return Chromosomes
+    o1, o2 = Chromosome(), Chromosome()
+    o1.set_route(offspring1), o2.set_route(offspring2)
+    return o1, o2
+
+
+def mutation(chromosome, mutation_rate: int):
     for idx in range(len(chromosome.route)):
         if random.randint(0, 100) < mutation_rate:
-            idx2 = random.randint(0, len(CITIES) - 1)
+            idx2 = random.randint(0, len(chromosome.route) - 1)
             chromosome.swap(idx, idx2)
 
 
 def selection(population):
-    parents = []
-    parents.append((random.choices(population=population.population, cum_weights=population.weights, k=1))[0])
-    tmp = random.choices(population=population.population, cum_weights=population.weights, k=1)
-    while parents[0] == tmp[0]:
-        tmp = random.choices(population=population.population, cum_weights=population.weights, k=1)
-    parents.append(tmp[0])
-    print(f"parents: {parents[0].route}, {parents[1].route}")
-    return parents
+    return random.choices(population=population.population, cum_weights=population.weights, k=2)
 
 
-def elite(old_population, new_population):
-    old_fittest = old_population.get_fittest()
-    new_fittest = new_population.get_fittest()
-    if old_fittest.fittness > new_fittest.fittness:
-        worst_idx = new_population.get_worst_index()
-        new_population.population[worst_idx] = old_fittest
+def elite(old_population, new_population, elite_size):
+    size = len(new_population.population) - 1
+    old_population.sort_population_by_fitness()
+    new_population.sort_population_by_fitness()
+    for i in range(elite_size):
+        if old_population.population[i].fittness > new_population.population[size - i].fittness:
+            new_population.population[size - i] = old_population.population[i]
 
 
-def new_gen(current_gen, mutation_rate):
-    next_gen = Population(POPULATION_SIZE)
+def new_gen(current_gen, mutation_rate: int, cities):
+    next_gen = Population(POPULATION_SIZE, cities)
     new_population = []
     parents = selection(current_gen)
     for j in range(int(POPULATION_SIZE / 2)):
-        off1, off2 = crossover(parents[0], parents[1])
+        off1, off2 = one_point_crossover(parents[0], parents[1])
         new_population.append(off2)
         new_population.append(off1)
     for offspring in new_population:
         mutation(offspring, mutation_rate)
     next_gen.set_population(new_population)
-    elite(old_population=current_gen, new_population=next_gen)
+    elite(old_population=current_gen, new_population=next_gen, elite_size=ELITE_SIZE)
     return next_gen
 
 
 if __name__ == '__main__':
     # initialize population
+    cities = init_cities(np.loadtxt(sys.argv[1]))
+    start = timer()
     generation_count = 0
-    population = Population(POPULATION_SIZE)
-    print(sum(population.weights))
+    population = Population(POPULATION_SIZE, cities)
+    file_name = f"result-{start}.txt"
+    file = open(file_name, "w+")
+    fittest = float('inf')
+    best_gen = 0
+    idx = population.get_worst_index()
+    start_dis = population.get_fittest().distance
+    file.write(
+        f"Try with - Population size - {POPULATION_SIZE}, Mutation rate - {MUTATION_RATE}, Elite size - {ELITE_SIZE}, "
+        f"Generation number - {NUMBER_OF_GENERATIONS}\n")
+    file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
+               f"route - {population.get_fittest().route}\n "
+               f"the worst distance is: {population.population[idx].distance}\n")
     for i in range(NUMBER_OF_GENERATIONS):
-        population = new_gen(population, MUTATION_RATE)
-        idx = population.get_worst_index()
-        print(f"Generation count: {generation_count} fittest: {population.get_fittest().distance} route - {population.get_fittest().route}\n"
-              f"the worst distance is: {population.population[idx].distance}")
+        # print(f"Started generation {generation_count}")
+        population = new_gen(population, MUTATION_RATE, cities)
+        if fittest > population.get_fittest().distance:
+            fittest = population.get_fittest().distance
+            best_gen = generation_count
         generation_count += 1
-    print(f"Generation count: {generation_count} fittest: {population.get_fittest().fittness} ")
+    idx = population.get_worst_index()
+    file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
+               f"route - {population.get_fittest().route}\n "
+               f"the worst distance is: {population.population[idx].distance}\n")
+    end = timer()
+    file.write(f"Shortest distance is {fittest} in generation {best_gen}\n"
+               f"GA improved in {start_dis - fittest}\n")
+    file.write(f"Program ran in {end - start} seconds\n")
+    file.close()

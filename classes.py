@@ -1,19 +1,39 @@
 import random
-from main import CITIES
+import numpy as np
+
+
+def get_distance(chrom):
+    return chrom.distance
+
+
+class City:
+    def __init__(self, x, y, id):
+        self.id = id
+        self.x = x
+        self.y = y
+
+    def distance(self, city):
+        xDis = abs(self.x - city.x)
+        yDis = abs(self.y - city.y)
+        distance = np.sqrt((xDis ** 2) + (yDis ** 2))
+        return distance
+
+    def __repr__(self):
+        return "(" + str(self.x) + "," + str(self.y) + ")"
 
 
 class Population:
-    def __init__(self, size):
+    def __init__(self, size, cities):
         self.populationSize = size
         self.population = []
         self.weights = []
-        self.init_population()
+        self.init_population(cities)
         self.find_weights()
 
-    def init_population(self):
+    def init_population(self, cities):
         for i in range(self.populationSize):
             c = Chromosome()
-            c.random_init()
+            c.random_init(cities)
             self.population.append(c)
 
     def find_weights(self):
@@ -24,6 +44,8 @@ class Population:
             self.weights.append((c.fittness / sum) * 100)
 
     def set_population(self, population_list):
+        self.population.clear()
+        self.population = [None] * len(population_list)
         for i in range(len(population_list)):
             self.population[i] = population_list[i]
 
@@ -43,6 +65,9 @@ class Population:
                 idx = i
         return idx
 
+    def sort_population_by_fitness(self):
+        self.population.sort(key=get_distance)
+
 
 class Chromosome:
     def __init__(self):
@@ -50,8 +75,8 @@ class Chromosome:
         self.fittness = 0
         self.distance = 0
 
-    def random_init(self):
-        self.route = random.sample(CITIES, len(CITIES))
+    def random_init(self, cities):
+        self.route = random.sample(cities, len(cities))
         self.calc_fittness()
 
     def set_route(self, route_list):
@@ -61,11 +86,11 @@ class Chromosome:
     def calc_fittness(self):
         sum = 0
         for i in range(len(self.route) - 1):
-            diff = abs(self.route[i + 1] - self.route[i])
-            sum += diff
-        sum += abs(self.route[0] - self.route[len(self.route)-1])
-        self.distance = sum
-        self.fittness = 1/sum
+            dist = self.route[i].distance(self.route[i + 1])
+            sum += dist
+        sum += self.route[0].distance(self.route[len(self.route) - 1])
+        self.distance = int(sum)
+        self.fittness = float(1 / sum)
 
     def swap(self, i, j):
         self.route[i], self.route[j] = self.route[j], self.route[i]

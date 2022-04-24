@@ -1,12 +1,20 @@
 import sys
 from timeit import default_timer as timer
-
+import matplotlib.pyplot as plt
 from classes import *
 
 POPULATION_SIZE = 1000
-ELITE_SIZE = int(POPULATION_SIZE * 0.1)
+ELITE_SIZE = int(POPULATION_SIZE * 0.05)
 MUTATION_RATE = 10
 NUMBER_OF_GENERATIONS = 1000
+
+
+# drawing plot according to the num of iteration and loss cost
+def draw_plot(x, y):
+    plt.plot(x, y)
+    plt.xlabel("Generation")
+    plt.ylabel("Distance")
+    plt.show()
 
 
 def init_cities(cities_list):
@@ -25,6 +33,7 @@ def crossover(parent1, parent2):
     offspring1_idx = 0
     offspring2_idx = 0
     # random
+    # idx1 = random.randint(1, size - 1)
     idx1 = random.randint(0, size - 1)
     idx2 = random.randint(idx1, size)
     diff = idx2 - idx1
@@ -60,9 +69,12 @@ def one_point_crossover(parent1, parent2):
     # random
     point = random.randint(1, size - 1)
     offspring1.extend(parent1.route[0:point])
-    offspring1.extend(parent2.route[point:size])
     offspring2.extend(parent2.route[0:point])
-    offspring2.extend(parent1.route[point:size])
+    for i in range(size):
+        if parent2.route[i] not in offspring1:
+            offspring1.append(parent2.route[i])
+        if parent1.route[i] not in offspring2:
+            offspring2.append(parent1.route[i])
     # return Chromosomes
     o1, o2 = Chromosome(), Chromosome()
     o1.set_route(offspring1), o2.set_route(offspring2)
@@ -70,14 +82,18 @@ def one_point_crossover(parent1, parent2):
 
 
 def mutation(chromosome, mutation_rate: int):
-    for idx in range(len(chromosome.route)):
+    for idx in range(1, len(chromosome.route)):
         if random.randint(0, 100) < mutation_rate:
-            idx2 = random.randint(0, len(chromosome.route) - 1)
+            idx2 = random.randint(1, len(chromosome.route) - 1)
             chromosome.swap(idx, idx2)
 
 
 def selection(population):
     return random.choices(population=population.population, cum_weights=population.weights, k=2)
+
+
+def random_selection(population):
+    return random.choices(population=population.population, k=2)
 
 
 def elite(old_population, new_population, elite_size):
@@ -92,9 +108,9 @@ def elite(old_population, new_population, elite_size):
 def new_gen(current_gen, mutation_rate: int, cities):
     next_gen = Population(POPULATION_SIZE, cities)
     new_population = []
-    parents = selection(current_gen)
     for j in range(int(POPULATION_SIZE / 2)):
-        off1, off2 = one_point_crossover(parents[0], parents[1])
+        parents = random_selection(current_gen)
+        off1, off2 = crossover(parents[0], parents[1])
         new_population.append(off2)
         new_population.append(off1)
     for offspring in new_population:
@@ -111,7 +127,9 @@ if __name__ == '__main__':
     generation_count = 0
     population = Population(POPULATION_SIZE, cities)
     file_name = f"result-{start}.txt"
+    file_result = f"final_result-{start}.txt"
     file = open(file_name, "w+")
+    res_file = open(file_result, "w+")
     fittest = float('inf')
     best_gen = 0
     idx = population.get_worst_index()
@@ -137,4 +155,7 @@ if __name__ == '__main__':
     file.write(f"Shortest distance is {fittest} in generation {best_gen}\n"
                f"GA improved in {start_dis - fittest}\n")
     file.write(f"Program ran in {end - start} seconds\n")
+    for c in population.get_fittest().route:
+        res_file.write(f"{c.id}\n")
     file.close()
+    res_file.close()

@@ -7,8 +7,8 @@ def get_distance(chrom):
 
 
 class City:
-    def __init__(self, x, y, id):
-        self.id = id
+    def __init__(self, x, y, name):
+        self.id = name
         self.x = x
         self.y = y
 
@@ -76,6 +76,8 @@ class Chromosome:
         self.distance = 0
 
     def random_init(self, cities):
+        # self.route = random.sample(cities[1:], len(cities) - 1)
+        # self.route.insert(0, cities[0])
         self.route = random.sample(cities, len(cities))
         self.calc_fittness()
 

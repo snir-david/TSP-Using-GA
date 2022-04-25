@@ -3,8 +3,8 @@ from timeit import default_timer as timer
 
 from classes import *
 
-POPULATION_SIZE = 1000
-ELITE_SIZE = int(POPULATION_SIZE * 0.1)
+POPULATION_SIZE = 2000
+ELITE_SIZE = int(POPULATION_SIZE * 0.05)
 MUTATION_RATE = 10
 NUMBER_OF_GENERATIONS = 1000
 
@@ -66,6 +66,7 @@ def one_point_crossover(parent1, parent2):
     # return Chromosomes
     o1, o2 = Chromosome(), Chromosome()
     o1.set_route(offspring1), o2.set_route(offspring2)
+    # print(len(o1.route), len(o2.route), point)
     return o1, o2
 
 
@@ -94,7 +95,7 @@ def new_gen(current_gen, mutation_rate: int, cities):
     new_population = []
     parents = selection(current_gen)
     for j in range(int(POPULATION_SIZE / 2)):
-        off1, off2 = one_point_crossover(parents[0], parents[1])
+        off1, off2 = crossover(parents[0], parents[1])
         new_population.append(off2)
         new_population.append(off1)
     for offspring in new_population:
@@ -107,34 +108,39 @@ def new_gen(current_gen, mutation_rate: int, cities):
 if __name__ == '__main__':
     # initialize population
     cities = init_cities(np.loadtxt(sys.argv[1]))
-    start = timer()
-    generation_count = 0
-    population = Population(POPULATION_SIZE, cities)
-    file_name = f"result-{start}.txt"
-    file = open(file_name, "w+")
-    fittest = float('inf')
-    best_gen = 0
-    idx = population.get_worst_index()
-    start_dis = population.get_fittest().distance
-    file.write(
-        f"Try with - Population size - {POPULATION_SIZE}, Mutation rate - {MUTATION_RATE}, Elite size - {ELITE_SIZE}, "
-        f"Generation number - {NUMBER_OF_GENERATIONS}\n")
-    file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
-               f"route - {population.get_fittest().route}\n "
-               f"the worst distance is: {population.population[idx].distance}\n")
-    for i in range(NUMBER_OF_GENERATIONS):
-        # print(f"Started generation {generation_count}")
-        population = new_gen(population, MUTATION_RATE, cities)
-        if fittest > population.get_fittest().distance:
-            fittest = population.get_fittest().distance
-            best_gen = generation_count
-        generation_count += 1
-    idx = population.get_worst_index()
-    file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
-               f"route - {population.get_fittest().route}\n "
-               f"the worst distance is: {population.population[idx].distance}\n")
-    end = timer()
-    file.write(f"Shortest distance is {fittest} in generation {best_gen}\n"
-               f"GA improved in {start_dis - fittest}\n")
-    file.write(f"Program ran in {end - start} seconds\n")
-    file.close()
+    tryList = {0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5}
+    for i in range(5):
+        ELITE_SIZE = int(0.5 * POPULATION_SIZE)
+        start = timer()
+        generation_count = 0
+        population = Population(POPULATION_SIZE, cities)
+        file_name = f"result-{start}.txt"
+        file = open(file_name, "w+")
+        fittest = float('inf')
+        best_gen = 0
+        idx = population.get_worst_index()
+        start_dis = population.get_fittest().distance
+        file.write(
+            f"Try with - Population size - {POPULATION_SIZE}, Mutation rate - {MUTATION_RATE}, Elite size - {ELITE_SIZE}, "
+            f"Generation number - {NUMBER_OF_GENERATIONS}\n")
+        file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
+                   f"route - {population.get_fittest().route}\n "
+                   f"the worst distance is: {population.population[idx].distance}\n")
+        for i in range(NUMBER_OF_GENERATIONS):
+            # print(f"Started generation {generation_count}")
+            population = new_gen(population, MUTATION_RATE, cities)
+            if fittest > population.get_fittest().distance:
+                fittest = population.get_fittest().distance
+                best_gen = generation_count
+            generation_count += 1
+            file.write(f"Generation num - {generation_count}, average distance is {population.get_average()}\n"
+                       f"best distance - {population.get_fittest().distance}")
+        idx = population.get_worst_index()
+        file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
+                   f"route - {population.get_fittest().route}\n "
+                   f"the worst distance is: {population.population[idx].distance}\n")
+        end = timer()
+        file.write(f"Shortest distance is {fittest} in generation {best_gen}\n"
+                   f"GA improved in {start_dis - fittest}\n")
+        file.write(f"Program ran in {end - start} seconds\n")
+        file.close()

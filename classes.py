@@ -56,6 +56,12 @@ class Population:
                 fittest = chrom
         return fittest
 
+    def get_average(self):
+        sum = 0
+        for chrom in self.population:
+            sum += chrom.distance
+        return sum / len(self.population)
+
     def get_worst_index(self):
         worst = self.population[0]
         idx = 0
@@ -88,6 +94,7 @@ class Chromosome:
         for i in range(len(self.route) - 1):
             dist = self.route[i].distance(self.route[i + 1])
             sum += dist
+        # print(self.route)
         sum += self.route[0].distance(self.route[len(self.route) - 1])
         self.distance = int(sum)
         self.fittness = float(1 / sum)

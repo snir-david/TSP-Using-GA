@@ -3,18 +3,21 @@ from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 from classes import *
 
-POPULATION_SIZE = 1000
-ELITE_SIZE = int(POPULATION_SIZE * 0.05)
+POPULATION_SIZE = 300
+ELITE_SIZE = int(POPULATION_SIZE * 0.1)
 MUTATION_RATE = 10
-NUMBER_OF_GENERATIONS = 1000
+NUMBER_OF_GENERATIONS = 5000
 
 
 # drawing plot according to the num of iteration and loss cost
-def draw_plot(x, y):
-    plt.plot(x, y)
+def draw_plot(fittest, average, generation_count, time):
+    plt.plot(generation_count, fittest, label="Fittest")
+    plt.plot(generation_count, average, label="Average")
+    plt.legend()
     plt.xlabel("Generation")
     plt.ylabel("Distance")
-    plt.show()
+    plt.savefig(f"Plot of {time}.png")
+    plt.clf()
 
 
 def init_cities(cities_list):
@@ -33,7 +36,6 @@ def crossover(parent1, parent2):
     offspring1_idx = 0
     offspring2_idx = 0
     # random
-    # idx1 = random.randint(1, size - 1)
     idx1 = random.randint(0, size - 1)
     idx2 = random.randint(idx1, size)
     diff = idx2 - idx1
@@ -78,22 +80,26 @@ def one_point_crossover(parent1, parent2):
     # return Chromosomes
     o1, o2 = Chromosome(), Chromosome()
     o1.set_route(offspring1), o2.set_route(offspring2)
+    # print(len(o1.route), len(o2.route), point)
     return o1, o2
 
 
 def mutation(chromosome, mutation_rate: int):
-    for idx in range(1, len(chromosome.route)):
+    for idx in range(len(chromosome.route)):
         if random.randint(0, 100) < mutation_rate:
-            idx2 = random.randint(1, len(chromosome.route) - 1)
+            idx2 = random.randint(0, len(chromosome.route) - 1)
             chromosome.swap(idx, idx2)
 
 
-def selection(population):
-    return random.choices(population=population.population, cum_weights=population.weights, k=2)
+def weighted_selection(population):
+    return random.choices(population=population.population, cum_weights=population.weights, k=POPULATION_SIZE)
 
 
 def random_selection(population):
-    return random.choices(population=population.population, k=2)
+    parents = []
+    for i in range(POPULATION_SIZE):
+        parents.append(population.population[random.randint(0,POPULATION_SIZE-1)])
+    return parents
 
 
 def elite(old_population, new_population, elite_size):
@@ -108,23 +114,26 @@ def elite(old_population, new_population, elite_size):
 def new_gen(current_gen, mutation_rate: int, cities):
     next_gen = Population(POPULATION_SIZE, cities)
     new_population = []
-    for j in range(int(POPULATION_SIZE / 2)):
-        parents = random_selection(current_gen)
-        off1, off2 = crossover(parents[0], parents[1])
-        new_population.append(off2)
+    parents = weighted_selection(current_gen)
+    i = 0
+    for j in range(int(len(parents) / 2)):
+        off1, off2 = crossover(parents[i], parents[i+1])
         new_population.append(off1)
-    for offspring in new_population:
-        mutation(offspring, mutation_rate)
+        new_population.append(off2)
+        mutation(off1, mutation_rate)
+        mutation(off2, mutation_rate)
+        i += 2
     next_gen.set_population(new_population)
     elite(old_population=current_gen, new_population=next_gen, elite_size=ELITE_SIZE)
     return next_gen
 
 
-if __name__ == '__main__':
-    # initialize population
-    cities = init_cities(np.loadtxt(sys.argv[1]))
+def main_func():
     start = timer()
     generation_count = 0
+    average = []
+    fittestList = []
+    gen_count = []
     population = Population(POPULATION_SIZE, cities)
     file_name = f"result-{start}.txt"
     file_result = f"final_result-{start}.txt"
@@ -140,22 +149,42 @@ if __name__ == '__main__':
     file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
                f"route - {population.get_fittest().route}\n "
                f"the worst distance is: {population.population[idx].distance}\n")
-    for i in range(NUMBER_OF_GENERATIONS):
+    for generation_count in range(NUMBER_OF_GENERATIONS):
         # print(f"Started generation {generation_count}")
         population = new_gen(population, MUTATION_RATE, cities)
+        gen_count.append(generation_count)
+        fittestList.append(population.get_fittest().distance)
+        average.append(population.get_average())
         if fittest > population.get_fittest().distance:
             fittest = population.get_fittest().distance
             best_gen = generation_count
-        generation_count += 1
     idx = population.get_worst_index()
     file.write(f"Generation count: {generation_count} fittest: {population.get_fittest().distance}\n"
                f"route - {population.get_fittest().route}\n "
                f"the worst distance is: {population.population[idx].distance}\n")
     end = timer()
     file.write(f"Shortest distance is {fittest} in generation {best_gen}\n"
+               f"Average distance is {average[generation_count]}"
                f"GA improved in {start_dis - fittest}\n")
     file.write(f"Program ran in {end - start} seconds\n")
     for c in population.get_fittest().route:
         res_file.write(f"{c.id}\n")
     file.close()
     res_file.close()
+    draw_plot(fittestList, average, gen_count, start)
+    return fittest
+
+
+if __name__ == '__main__':
+    # initialize population
+    cities = init_cities(np.loadtxt(sys.argv[1]))
+    fit = 0
+    num_of_try = 10
+    for i in range(num_of_try):
+        start = timer()
+        print(f"Started GA in {start}")
+        curr = main_func()
+        fit += curr
+        end = timer()
+        print(f"GA Finish in {end - start} and the best distance is - {curr}")
+    print(f"Average fittest - {fit / num_of_try}")

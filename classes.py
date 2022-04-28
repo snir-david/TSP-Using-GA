@@ -48,6 +48,7 @@ class Population:
         self.population = [None] * len(population_list)
         for i in range(len(population_list)):
             self.population[i] = population_list[i]
+        self.populationSize = len(population_list)
 
     def get_fittest(self):
         fittest = self.population[0]
@@ -67,6 +68,12 @@ class Population:
 
     def sort_population_by_fitness(self):
         self.population.sort(key=get_distance)
+
+    def get_average(self):
+        sum = 0
+        for chrom in self.population:
+            sum += chrom.distance
+        return sum / self.populationSize
 
 
 class Chromosome:

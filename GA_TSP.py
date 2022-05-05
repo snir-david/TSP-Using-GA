@@ -3,9 +3,10 @@ from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 from classes import *
 
-POPULATION_SIZE = 300
+POPULATION_SIZE = 400
 ELITE_SIZE = int(POPULATION_SIZE * 0.1)
-MUTATION_RATE = 10
+MUTATION_RATE = 1
+CROSSOVER_RATE = 100
 NUMBER_OF_GENERATIONS = 5000
 
 
@@ -22,7 +23,7 @@ def draw_plot(fittest, average, generation_count, time):
 
 def init_cities(cities_list):
     cities = []
-    for i in range(len(cities_list)):
+    for i in range(1, len(cities_list)):
         c = City(cities_list[i][0], cities_list[i][1], i)
         cities.append(c)
     return cities
@@ -30,37 +31,40 @@ def init_cities(cities_list):
 
 def crossover(parent1, parent2):
     # init
-    size = len(parent1.route)
-    offspring1 = [None] * size
-    offspring2 = [None] * size
-    offspring1_idx = 0
-    offspring2_idx = 0
-    # random
-    idx1 = random.randint(0, size - 1)
-    idx2 = random.randint(idx1, size)
-    diff = idx2 - idx1
-    # taking from idx1 to idx2 the part of the appropriate parent
-    for i in range(idx1, idx2):
-        offspring1[i] = parent1.route[i]
-        offspring2[i] = parent2.route[i]
-    # rest of crossover
-    for j in range(size):
-        if parent2.route[j] not in offspring1 and ((offspring1_idx + diff) < size):
-            if offspring1_idx < idx1:
-                offspring1[offspring1_idx] = parent2.route[j]
-            else:
-                offspring1[offspring1_idx + diff] = parent2.route[j]
-            offspring1_idx += 1
-        if parent1.route[j] not in offspring2 and ((offspring2_idx + diff) < size):
-            if offspring2_idx < idx1:
-                offspring2[offspring2_idx] = parent1.route[j]
-            else:
-                offspring2[offspring2_idx + diff] = parent1.route[j]
-            offspring2_idx += 1
-    # return Chromosomes
-    o1, o2 = Chromosome(), Chromosome()
-    o1.set_route(offspring1), o2.set_route(offspring2)
-    return o1, o2
+    if CROSSOVER_RATE > random.randint(0, 100):
+        size = len(parent1.route)
+        offspring1 = [None] * size
+        offspring2 = [None] * size
+        offspring1_idx = 0
+        offspring2_idx = 0
+        # random
+        idx1 = random.randint(0, size - 1)
+        idx2 = random.randint(idx1, size)
+        diff = idx2 - idx1
+        # taking from idx1 to idx2 the part of the appropriate parent
+        for i in range(idx1, idx2):
+            offspring1[i] = parent1.route[i]
+            offspring2[i] = parent2.route[i]
+        # rest of crossover
+        for j in range(size):
+            if parent2.route[j] not in offspring1 and ((offspring1_idx + diff) < size):
+                if offspring1_idx < idx1:
+                    offspring1[offspring1_idx] = parent2.route[j]
+                else:
+                    offspring1[offspring1_idx + diff] = parent2.route[j]
+                offspring1_idx += 1
+            if parent1.route[j] not in offspring2 and ((offspring2_idx + diff) < size):
+                if offspring2_idx < idx1:
+                    offspring2[offspring2_idx] = parent1.route[j]
+                else:
+                    offspring2[offspring2_idx + diff] = parent1.route[j]
+                offspring2_idx += 1
+        # return Chromosomes
+        o1, o2 = Chromosome(), Chromosome()
+        o1.set_route(offspring1), o2.set_route(offspring2)
+        return o1, o2
+    else:
+        return parent1, parent2
 
 
 def one_point_crossover(parent1, parent2):
@@ -98,7 +102,7 @@ def weighted_selection(population):
 def random_selection(population):
     parents = []
     for i in range(POPULATION_SIZE):
-        parents.append(population.population[random.randint(0,POPULATION_SIZE-1)])
+        parents.append(population.population[random.randint(0, POPULATION_SIZE - 1)])
     return parents
 
 
@@ -117,7 +121,7 @@ def new_gen(current_gen, mutation_rate: int, cities):
     parents = weighted_selection(current_gen)
     i = 0
     for j in range(int(len(parents) / 2)):
-        off1, off2 = crossover(parents[i], parents[i+1])
+        off1, off2 = crossover(parents[i], parents[i + 1])
         new_population.append(off1)
         new_population.append(off2)
         mutation(off1, mutation_rate)

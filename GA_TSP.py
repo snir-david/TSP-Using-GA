@@ -6,7 +6,7 @@ from classes import *
 POPULATION_SIZE = 400
 ELITE_SIZE = int(POPULATION_SIZE * 0.1)
 MUTATION_RATE = 1
-CROSSOVER_RATE = 100
+CROSSOVER_RATE = 90
 NUMBER_OF_GENERATIONS = 5000
 
 
@@ -29,7 +29,7 @@ def init_cities(cities_list):
     return cities
 
 
-def crossover(parent1, parent2):
+def two_point_crossover(parent1, parent2):
     # init
     if CROSSOVER_RATE > random.randint(0, 100):
         size = len(parent1.route)
@@ -88,6 +88,36 @@ def one_point_crossover(parent1, parent2):
     return o1, o2
 
 
+def offspring_check(parent, offspring, index):
+    i = 0
+    while parent.route[i] in offspring:
+        i += 1
+    offspring[index] = parent.route[i]
+
+
+def uniform_crossover(parent1, parent2):
+    if CROSSOVER_RATE > random.randint(0, 100):
+        if parent1 == parent2:
+            return parent1, parent2
+        size = len(parent1.route)
+        offspring1 = [None] * size
+        offspring2 = [None] * size
+        for i in range(size):
+            parent = random.randint(0, 1)
+            if parent == 0:
+                offspring_check(parent1, offspring1, i)
+                offspring_check(parent2, offspring2, i)
+            else:
+                offspring_check(parent2, offspring1, i)
+                offspring_check(parent1, offspring2, i)
+            # return Chromosomes
+        o1, o2 = Chromosome(), Chromosome()
+        o1.set_route(offspring1), o2.set_route(offspring2)
+        return o1, o2
+    else:
+        return parent1, parent2
+
+
 def mutation(chromosome, mutation_rate: int):
     for idx in range(len(chromosome.route)):
         if random.randint(0, 100) < mutation_rate:
@@ -121,7 +151,7 @@ def new_gen(current_gen, mutation_rate: int, cities):
     parents = weighted_selection(current_gen)
     i = 0
     for j in range(int(len(parents) / 2)):
-        off1, off2 = crossover(parents[i], parents[i + 1])
+        off1, off2 = two_point_crossover(parents[i], parents[i + 1])
         new_population.append(off1)
         new_population.append(off2)
         mutation(off1, mutation_rate)

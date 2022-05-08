@@ -23,8 +23,8 @@ def draw_plot(fittest, average, generation_count, time):
 
 def init_cities(cities_list):
     cities = []
-    for i in range(1, len(cities_list)):
-        c = City(cities_list[i][0], cities_list[i][1], i)
+    for i in range(0, len(cities_list)):
+        c = City(cities_list[i][0], cities_list[i][1], i+1)
         cities.append(c)
     return cities
 
@@ -201,10 +201,13 @@ def main_func():
                f"Average distance is {average[generation_count]}"
                f"GA improved in {start_dis - fittest}\n")
     file.write(f"Program ran in {end - start} seconds\n")
+    ids = []
     for c in population.get_fittest().route:
         res_file.write(f"{c.id}\n")
+        ids.append(c.id)
     file.close()
     res_file.close()
+    print(ids)
     draw_plot(fittestList, average, gen_count, start)
     return fittest
 
@@ -214,7 +217,8 @@ if __name__ == '__main__':
     cities = init_cities(np.loadtxt(sys.argv[1]))
     fit = 0
     num_of_try = 10
-    for i in range(num_of_try):
+    for i in range(1,num_of_try):
+        POPULATION_SIZE = 100*i
         start = timer()
         print(f"Started GA in {start}")
         curr = main_func()
